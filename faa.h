@@ -20,38 +20,23 @@ private:
     T _val;
   };
 
-#if 0
   struct Remover {
-    T _heir_val;
-    FAA _item;
+    pNode _heir;
+    pNode _item;
     T _removed;
+    T _swap;
   };
-#endif
 
   explicit FAA (pNode const & node) : _node(node) {}
 
-#if 0
-  static FAA 
-  skew (FAA const & n)
-  {
-    if ((n.level() != 0) and n.left().level() == n.level()) {
-      return FAA (
-	n.level(),
-	n.left().left(),
-	FAA (n.level(), n.left().right(), n.right(), n.val()),
-	n.left().val()
-      );
-    } else {
-      return n;
-    }
-  }
-#else
-  // recursive skew
+  static void W (char ch) {fputc (ch, stderr);}
+
   static FAA
   skew (FAA const & n)
   {
     if (n.level() != 0) {
       if (n.left().level() == n.level()) {
+	//W ('K');
 	return FAA (
 	  n.level(), 
 	  n.left().left(),
@@ -65,28 +50,12 @@ private:
       return n;
     }
   }
-#endif
 
-#if 0
-  static FAA
-  split (FAA const & n) 
-  {
-    if ((n.level() != 0) and n.right().right().level() == n.level()) {
-      return FAA (
-	n.right().level() + 1,
-	FAA (n.level(), n.left(), n.right().left(), n.val()),
-	n.right().right(),
-	n.right().val()
-      );
-    } else {
-      return n;
-    }
-  }
-#else
   static FAA
   split (FAA const & n)
   {
     if ((n.level() != 0) && (n.right().right().level() == n.level())) {
+      //W ('P');
       return FAA (
 	n.right().level() + 1,
 	FAA (n.level(), n.left(), n.right().left(), n.val()),
@@ -97,42 +66,78 @@ private:
       return n;
     }
   }
-#endif
 
-#if 0
   // emulate mutability.
   static FAA set_l     (FAA & n, FAA & l) {return FAA (n.level(), l, n.right(), n.val());}
   static FAA set_r     (FAA & n, FAA & r) {return FAA (n.level(), n.left(), r, n.val());}
   static FAA set_level (FAA & n, uint8_t level) {return FAA (level, n.left(), n.right(), n.val());}
+  static FAA set_val   (FAA & n, T val) {return FAA (n.level(), n.left(), n.right(), val);}
 
   static FAA
   remove0 (Remover & r, const FAA & root, T & key)
   {
     FAA root0;
-    bool is_heir = false;
+
+    // --- descend ---
     if (!root.is_empty()) {
-      is_heir = true;
-      r._heir_val = root.val()
-      if (root.val() == key) {
-	// let the bottom know we found it on the way down...
-	r._item = root;
-	root0 = r._item;
-	FAA new_left = remove0 (r, root.left(), key);
-	root0 = set_l (root0, new_left);
+      //fprintf (stderr, "<%d>", root.level());
+      r._heir = root._node;
+      if (root.val() >= key) {
+	// this is set on each right turn
+	r._item = root._node;
+	//W ('L');
+	root0 = FAA (root.level(), remove0 (r, root.left(), key), root.right(), root.val());
+	if (root.val() == key) {
+	  // do the swap
+	  r._removed = root.val();
+	  //fprintf (stderr, "(%d)", r._removed);
+	  root0 = set_val (root0, r._swap);
+	}
       } else {
+	//W ('R');
 	root0 = FAA (root.level(), root.left(), remove0 (r, root.right(), key), root.val());
       }
     } else {
       root0 = root;
     }
-    if (root == (const FAA<T>) r._heir) {
+    // --- ascend ---
+    //if (root.level() == 1) {
+    if (root._node == r._heir) {
+      //W ('B');
       // at the bottom, remove
-      if (!r._item.is_empty() && r._item.val() == key) {
+      if (r._item && r._item->_val == key) {
+	//W ('S');
+	r._swap = root0.val();
+	//fprintf (stderr, "[%d]", r._swap);
+	// here we differ from AA's algorithm
+	if (root0.right().is_empty()) {
+	  return root0.left();
+	} else {
+	  return root0.right();
+	}
+      } else {
+	return root0;
+      }
+    } else {
+      // not at the bottom, check balance
+      if ((   root0.left().level() < (root0.level() - 1))
+	  || (root0.right().level() < (root0.level() - 1))) {
+	//W ('/');
+	root0 = set_level (root0, root0.level() - 1);
+	if (root0.right().level() > root0.level()) {
+	  // equivalent to root0.r.level = root0.level
+	  FAA right0 = root0.right();
+	  FAA right1 = set_level (right0, root0.level());
+	  root0 = set_r (root0, right1);
+	}
+	root0 = split (skew (root0));
+	return root0;
+      } else {
+	//W ('=');
+	return root0;
       }
     }
-    return root0;
   }
-#endif
 
 public:
 
@@ -141,8 +146,8 @@ public:
     : _node (std::make_shared<const Node>(level, l._node, r._node, val))
   {
     // the '<=' allows duplicates, otherwise we abort.
-    assert (l.is_empty() || l.val() <= val);
-    assert (r.is_empty() || val <= r.val());
+    //assert (l.is_empty() || l.val() <= val);
+    //assert (r.is_empty() || val <= r.val());
   }
   // populate an FAA from iterators.
   template<class I>
@@ -225,14 +230,25 @@ public:
     }
   }
 
-#if 0
   FAA remove (T val0) const
   {
     Remover r;
-    // remove0 (Remover & r, FAA const & root, T & key)
     return remove0 (r, *this, val0);
   }
-#endif
+
+  void
+  dump (int d=1)
+  {
+    if (level() > 0) {
+      left().dump (d+1);
+      for (int i=0; i < d; i++) {
+	fprintf (stderr, "  ");
+      }
+      fprintf (stderr, "%4d %d\n", level(), val());
+      right().dump (d+1);
+    }
+  }
+
 
 private:
     pNode _node;
