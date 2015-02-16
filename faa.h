@@ -29,14 +29,11 @@ private:
 
   explicit FAA (pNode const & node) : _node(node) {}
 
-  static void W (char ch) {fputc (ch, stderr);}
-
   static FAA
   skew (FAA const & n)
   {
     if (n.level() != 0) {
       if (n.left().level() == n.level()) {
-	//W ('K');
 	return FAA (
 	  n.level(), 
 	  n.left().left(),
@@ -55,7 +52,6 @@ private:
   split (FAA const & n)
   {
     if ((n.level() != 0) && (n.right().right().level() == n.level())) {
-      //W ('P');
       return FAA (
 	n.right().level() + 1,
 	FAA (n.level(), n.left(), n.right().left(), n.val()),
@@ -85,30 +81,23 @@ private:
       if (root.val() >= key) {
 	// this is set on each right turn
 	r._item = root._node;
-	//W ('L');
 	root0 = FAA (root.level(), remove0 (r, root.left(), key), root.right(), root.val());
 	if (root.val() == key) {
 	  // do the swap
 	  r._removed = root.val();
-	  //fprintf (stderr, "(%d)", r._removed);
 	  root0 = set_val (root0, r._swap);
 	}
       } else {
-	//W ('R');
 	root0 = FAA (root.level(), root.left(), remove0 (r, root.right(), key), root.val());
       }
     } else {
       root0 = root;
     }
     // --- ascend ---
-    //if (root.level() == 1) {
     if (root._node == r._heir) {
-      //W ('B');
       // at the bottom, remove
       if (r._item && r._item->_val == key) {
-	//W ('S');
 	r._swap = root0.val();
-	//fprintf (stderr, "[%d]", r._swap);
 	// here we differ from AA's algorithm
 	if (root0.right().is_empty()) {
 	  return root0.left();
@@ -122,7 +111,6 @@ private:
       // not at the bottom, check balance
       if ((   root0.left().level() < (root0.level() - 1))
 	  || (root0.right().level() < (root0.level() - 1))) {
-	//W ('/');
 	root0 = set_level (root0, root0.level() - 1);
 	if (root0.right().level() > root0.level()) {
 	  // equivalent to root0.r.level = root0.level
@@ -133,7 +121,6 @@ private:
 	root0 = split (skew (root0));
 	return root0;
       } else {
-	//W ('=');
 	return root0;
       }
     }
