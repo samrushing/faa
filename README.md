@@ -9,7 +9,7 @@ famously left the ``delete()`` method as an exercise for the reader.
 I've found an [implementation of delete in Racket/Scheme](http://matt.might.net/articles/red-black-delete/),
 but it uses pattern matching and is fairly complex.
 
-Arne Anderson invented a simplified variant of red-black trees, now
+Arne Andersson invented a simplified variant of red-black trees, now
 called 'AA Trees', that trades slightly lower performance for a
 massively simplified implementation.
 
