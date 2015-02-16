@@ -26,6 +26,6 @@ found Bartosz Milewski's C++ version of Okasaki's
 [data structure collection](https://github.com/BartoszMilewski/Okasaki).
 
 Using his ``RBTree`` as a take-off point, I have made this hybrid of
-my functional AA tree.  It's a work in progress, but I think it may
-actually be functional.
+my functional AA tree and Milweski's RBTree.  It's a work in progress,
+but I think it may actually be functional.
 
