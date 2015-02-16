@@ -2,7 +2,8 @@
 Persistent Binary Search Tree
 =============================
 
-This is a functional data structure a la Okasaki's "Functional Data Structures".
+This is a pure-functional binary search tree a la Okasaki's
+"Functional Data Structures".
 
 Okasaki's version of Red-Black Trees was inspirational, but he
 famously left the ``delete()`` method as an exercise for the reader.
@@ -29,3 +30,13 @@ Using his ``RBTree`` as a take-off point, I have made this hybrid of
 my functional AA tree and Milweski's RBTree.  It's a work in progress,
 but I think it may actually be functional.
 
+Why
+---
+
+Why would you want this?  It allows you to maintain multiple
+independent versions of the same data structure, each sharing the vast
+majority of their structure.  This permits transactional-style
+modification, without locks, in a multi-threaded environment.  It also
+aids in checkpointing.  See
+[Okasaki](http://okasaki.blogspot.com/2008/02/ten-years-of-purely-functional-data.html)
+for more info.
