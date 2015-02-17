@@ -76,7 +76,7 @@ private:
   }
 
   static pNode
-  split (pNode const & n)
+  split (pNode n)
   {
     if ((n->_level != 0) && (n->_r->_r->_level == n->_level)) {
       return make (
@@ -92,20 +92,20 @@ private:
 
   static 
   pNode 
-  insert0 (pNode const & n, T val0)
+  insert0 (pNode n, T val0)
   {
     if (n->_level == 0) {
       return make (1, _nil, _nil, val0);
     } else if (n->_val > val0) {
-      return split (skew (make (n->_level, insert0 (n->_l, val0), n->_r, n->_val)));
+      return split (skew (set_l (n, insert0 (n->_l, val0))));
     } else {
-      return split (skew (make (n->_level, n->_l, insert0 (n->_r, val0), n->_val)));
+      return split (skew (set_r (n, insert0 (n->_r, val0))));
     }
   }
 
 
   void
-  verify0 (pNode const & n)
+  verify0 (pNode n)
   {
     if (n->_level != 0) {
       verify0 (n->_l);
@@ -116,14 +116,16 @@ private:
   }
 
   // emulate mutability.
-  static pNode set_level (pNode const & n, uint8_t level) {return make (level, n->_l, n->_r, n->_val);}
-  static pNode set_l     (pNode const & n, pNode & l)     {return make (n->_level, l, n->_r, n->_val);}
-  static pNode set_r     (pNode const & n, pNode & r)     {return make (n->_level, n->_l, r, n->_val);}
-  static pNode set_val   (pNode const & n, T & val)       {return make (n->_level, n->_l, n->_r, val);}
+  // [xxx might it be possible to have non-const Node, then modify it, then wrap it in const later?
+  //   might cut down on all the likely copies generated here...]
+  static pNode set_level (pNode n, uint8_t level) {return make (level, n->_l, n->_r, n->_val);}
+  static pNode set_l     (pNode n, pNode l)       {return make (n->_level, l, n->_r, n->_val);}
+  static pNode set_r     (pNode n, pNode r)       {return make (n->_level, n->_l, r, n->_val);}
+  static pNode set_val   (pNode n, T & val)       {return make (n->_level, n->_l, n->_r, val);}
 
   static
   const pNode
-  remove0 (Remover & r, const pNode & root, T & key)
+  remove0 (Remover & r, pNode root, T & key)
   {
     pNode root0;
 
@@ -134,14 +136,14 @@ private:
       if (root->_val >= key) {
 	// this is set on each right turn
 	r._item = root;
-	root0 = make (root->_level, remove0 (r, root->_l, key), root->_r, root->_val);
+	root0 = set_l (root, remove0 (r, root->_l, key));
 	if (root->_val == key) {
 	  // do the swap
 	  r._removed = root->_val;
 	  root0 = set_val (root0, r._swap);
 	}
       } else {
-	root0 = make (root->_level, root->_l, remove0 (r, root->_r, key), root->_val);
+	root0 = set_r (root, remove0 (r, root->_r, key));
       }
     } else {
       root0 = root;
@@ -168,8 +170,7 @@ private:
 	root0 = set_level (root0, root0->_level - 1);
 	if (root0->_r->_level > root0->_level) {
 	  // equivalent to root0.r.level = root0.level
-	  const pNode right0 = set_level (root->_r, root0->_level);
-	  root0 = make (root0->_level, root0->_l, right0, root0->_val);
+	  root0 = set_r (root0, set_level (root->_r, root0->_level));
 	}
 	root0 = split (skew (root0));
 	return root0;
@@ -256,6 +257,7 @@ public:
     }
   }
 
+  // I think this would traditionally return an iterator. TBD.
   FAA remove (T val0, bool & found, T & removed) const
   {
     Remover r;
