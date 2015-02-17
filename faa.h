@@ -64,11 +64,11 @@ private:
 	return make (
 	  n->_level, 
 	  n->_l->_l,
-	  skew (make (n->_level, n->_l->_r, n->_r, n->_val)),
+	  skew (set_l (n, n->_l->_r)),
 	  n->_l->_val
 	);
       } else {
-	return make (n->_level, n->_l, skew (n->_r), n->_val);
+	return set_r (n, skew (n->_r));
       }
     } else {
       return n;
@@ -81,7 +81,7 @@ private:
     if ((n->_level != 0) && (n->_r->_r->_level == n->_level)) {
       return make (
 	n->_r->_level + 1,
-	make (n->_level, n->_l, n->_r->_l, n->_val),
+	set_r (n, n->_r->_l),
 	split (n->_r->_r),
 	n->_r->_val
       );
