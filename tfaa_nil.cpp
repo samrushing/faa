@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <random>
 #include <list>
+#include <set>
 
 void
 dump (FAA<int> & t)
@@ -21,53 +22,42 @@ dump (FAA<int> & t)
 int
 main (int argc, char * argv[]) 
 {
+  fprintf (stderr, "nil._level = %d\n", FAA<int>::_nil->_level);
+  fprintf (stderr, "nil._l._level = %d\n", FAA<int>::_nil->_l->_level);
+  fprintf (stderr, "nil._l4._level = %d\n", FAA<int>::_nil->_l->_l->_l->_l->_level);
+
   FAA<int> t0;
   auto t1 = t0.insert (34);
   auto t2 = t1.insert (19);
   fprintf (stderr, "t1 %d\n", t1.val());
   fprintf (stderr, "t2 %d\n", t2.val());
 
+  fprintf (stderr, "set...");
+  std::mt19937 g0 (3141);
+
+  std::set<int> m0;
+
+  for (int i=0; i < 100000; i++) {
+    int n = g0();
+    m0.insert (n);
+  }
+
+  fprintf (stderr, "done...\n");
+  fprintf (stderr, "faa...");
   std::mt19937 generator (3141);
 
-  for (int i=0; i < 10000; i++) {
+  for (int i=0; i < 100000; i++) {
     int n = generator();
     t2 = t2.insert (n);
     //fprintf (stderr, "\n--- %d\n", n);
     //t2.dump();
-    t2.verify();
+    //t2.verify();
   }
   
-  //t2.dump();
-
-  fprintf (stderr, "\ndone.\n");
-
-  std::list<int> nl;
-  t2.to_list (nl);
-  
-  //dump (t2);
-
-  //t2.dump();
-
-  auto t3 = FAA<int> (nl.begin(), nl.end());
-  //dump (t3);
-  //t3.dump();
+  fprintf (stderr, "done...\n");
 
   bool found;
   int removed;
-  auto t4 = t2.remove (19, found, removed);
-  //t4.dump();
-  //dump (t4);
-
-  auto t5 = t4.remove (34, found, removed);
-  //t5.dump();
-  //dump (t5);
-
-  std::mt19937 g2 (3141);
-
-  for (int i=0; i < 10000; i++) {
-    int n = g2();
-    t5 = t5.remove (n, found, removed);
-    //dump (t5);
-  }
+  auto t3 = t2.remove (19, found, removed);
 
 }
