@@ -3,6 +3,7 @@
 #include <cassert>
 #include <memory>
 #include <list>
+#include "cons.h"
 
 template<class T>
 class FAA
@@ -30,10 +31,91 @@ private:
     bool _found;
   };
 
-public:
-  static pNode _nil;
+  typedef ConsList<pNode> path_t;
 
-private:
+  class iterator {
+
+  private:
+    path_t _path;
+
+  public:
+
+    // these typedefs provide enough magic to allow
+    //   this iterator to work with STL.
+    typedef ptrdiff_t difference_type;
+    typedef T value_type;
+    typedef const T& reference;
+    typedef const T* pointer;
+    typedef std::input_iterator_tag iterator_category;
+
+    iterator (path_t & path) : _path(path) {}
+    iterator() {}
+
+    bool
+    operator!=(const iterator & other)
+    {
+      return _path != other._path;
+    }
+
+    bool
+    operator==(const iterator & other)
+    {
+      return _path == other._path;
+    }
+
+    const iterator &
+    operator++()
+    {
+      path_t p = _path;
+      if (!p) {
+	return *this;
+      } else {
+	pNode n = car (p);
+	if (n->_r->_level) {
+	  n = n->_r;
+	  p = cons (n, p);
+	  while (n->_l->_level > 0) {
+	    n = n->_l;
+	    p = cons (n, p);
+	  }
+	  _path = p;
+	  return *this;
+	} else {
+	  pNode child = n;
+	  while (true) {
+	    if (cdr(p)) {
+	      p = cdr(p);
+	      n = car(p);
+	      if (child == n->_l) {
+		_path = p;
+		return *this;
+	      }
+	      child = n;
+	    } else {
+	      path_t p;
+	      _path = p;
+	      return *this;
+	    }
+	  }
+	  _path = p;
+	  return *this;
+	}
+      }
+    }
+
+    // Note: operator-- would be a mirror image of operator++, swapping all the
+    //   rights and lefts.  A proper iterator implementation would do rbegin/rend/etc.
+    //   Also, note that "end()--" is supposed to give you the last element.
+
+    const T & operator*()
+    {
+      return car(_path)->_val;
+    }
+
+
+  };
+
+  static pNode _nil;
 
   // tricky making the sentinel that points at itself.
   static
@@ -131,7 +213,6 @@ private:
 
     // --- descend ---
     if (root->_level != 0) {
-      //fprintf (stderr, "<%d>", root.level());
       r._heir = root;
       if (root->_val >= key) {
 	// this is set on each right turn
@@ -180,6 +261,24 @@ private:
     }
   }
 
+  static
+  iterator
+  find0 (pNode n, const T & x, path_t & p)
+  {
+    if (n->_level == 0) {
+      return iterator();
+    } else {
+      p = cons (n, p);
+      if (x < n->_val) {
+	return find0 (n->_l, x, p);
+      } else if (n->_val < x) {
+	return find0 (n->_r, x, p);
+      } else {
+	return iterator (p);
+      }
+    }
+  }
+
 public:
 
   FAA() : _node (_nil) 
@@ -199,25 +298,18 @@ public:
       });
     _node = t._node;
   }
-  bool is_empty() const { return !_node; }
+  bool is_empty() const { return _node == _nil; }
 
-  T val() const
+  T
+  val() const
   {
     assert (!is_empty());
     return _node->_val;
   }
-  uint8_t level() const
-  {
-    return _node->_level;
-  }
-  FAA left() const
-  {
-    return FAA (_node->_l);
-  }
-  FAA right() const
-  {
-    return FAA (_node->_r);
-  }
+
+  uint8_t level() const {return _node->_level;}
+  FAA left() const {return FAA (_node->_l);}
+  FAA right() const {return FAA (_node->_r);}
 
   bool member(T x) const
   {
@@ -240,13 +332,6 @@ public:
     return FAA (insert0 (_node, val0));
   }
 
-  // Since the nodes are const, it should be possible to make an iterator
-  //  [without parent links] as follows:
-  // begin() - descend the tree all the way to the left, building a list of
-  //  parent nodes along the way.  Now to move forward by one node, simply
-  //  traverse the tree by following up the parent nodes as needed.
-  //  Same with rbegin()/rend().
-
   void
   to_list(std::list<T> & a)
   {
@@ -260,10 +345,12 @@ public:
   // I think this would traditionally return an iterator. TBD.
   FAA remove (T val0, bool & found, T & removed) const
   {
+    found = false;
     Remover r;
     pNode result = remove0 (r, _node, val0);
     if (r._found) {
       removed = r._removed;
+      found = true;
       return FAA (result);
     } else {
       return *this;
@@ -288,6 +375,33 @@ public:
       right().dump (d+1);
     }
   }
+
+  iterator
+  begin()
+  {
+    pNode n = _node;
+    path_t p;
+    while (n->_level > 0) {
+      p = cons (n, p);
+      n = n->_l;
+    }
+    return iterator (p);
+  }
+
+  iterator
+  end()
+  {
+    path_t p;
+    return iterator(p);
+  }
+
+  iterator
+  find (const T & x)
+  {
+    path_t null_path;
+    return find0 (_node, x, null_path);
+  }
+
 
 };
 
