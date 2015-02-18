@@ -311,35 +311,9 @@ public:
   FAA left() const {return FAA (_node->_l);}
   FAA right() const {return FAA (_node->_r);}
 
-  bool member(T x) const
-  {
-    if (is_empty()) {
-      return false;
-    } else {
-      T y = val();
-      if (x < y) {
-	return left().member(x);
-      } else if (y < x) {
-	return right().member(x);
-      } else {
-      return true;
-      }
-    }
-  }
-
   FAA insert (T val0)  const
   {
     return FAA (insert0 (_node, val0));
-  }
-
-  void
-  to_list(std::list<T> & a)
-  {
-    if (!is_empty()) {
-      left().to_list (a);
-      a.push_back(val());
-      right().to_list (a);
-    }
   }
 
   // I think this would traditionally return an iterator. TBD.
