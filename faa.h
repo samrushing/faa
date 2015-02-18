@@ -42,7 +42,7 @@ private:
 
     // these typedefs provide enough magic to allow
     //   this iterator to work with STL.
-    typedef ptrdiff_t difference_type;
+    typedef std::ptrdiff_t difference_type;
     typedef T value_type;
     typedef const T& reference;
     typedef const T* pointer;
