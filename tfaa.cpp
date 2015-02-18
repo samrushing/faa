@@ -1,22 +1,10 @@
 // -*- Mode: C++ -*-
 
 #include "faa.h"
-#include <stdio.h>
-#include <stdint.h>
+#include <iostream>
 #include <random>
 #include <list>
-
-void
-dump (FAA<int> & t)
-{
-  std::list<int> nl;
-  t.to_list (nl);
-  fprintf (stderr, "[");
-  for (auto i = nl.begin(); i != nl.end(); ++i) {
-    fprintf (stderr, "%d ", *i);
-  }
-  fprintf (stderr, "]\n");
-}
+#include <set>
 
 int
 main (int argc, char * argv[]) 
@@ -24,50 +12,85 @@ main (int argc, char * argv[])
   FAA<int> t0;
   auto t1 = t0.insert (34);
   auto t2 = t1.insert (19);
-  fprintf (stderr, "t1 %d\n", t1.val());
-  fprintf (stderr, "t2 %d\n", t2.val());
+  std::cerr << "t1 " << t1.val() << std::endl;
+  std::cerr << "t2 " << t2.val() << std::endl;
 
-  std::mt19937 generator (3141);
+  long nitems = 1000;
 
-  for (int i=0; i < 10000; i++) {
-    int n = generator();
+  if (argc > 1) {
+    nitems = atoi (argv[1]);
+  }
+
+  std::cerr << "building set...";
+
+  std::mt19937 g0 (3141);
+  std::set<int> s0;
+  std::list<int> l0;
+
+  // avoid duplicates, for now.
+  for (int i=0; i < nitems; i++) {
+    int n = g0();
+    if (s0.find(n) == s0.end()) {
+      s0.insert (n);
+      l0.push_back (n);
+    }
+  }
+
+  std::cerr << l0.size() << " entries...";
+  std::cerr << "done.\n";
+  std::cerr << "fill faa...";
+
+  for (const int & n : l0) {
     t2 = t2.insert (n);
     //fprintf (stderr, "\n--- %d\n", n);
     //t2.dump();
-    t2.verify();
+    //t2.verify();
   }
   
-  //t2.dump();
+  t2.verify();
 
-  fprintf (stderr, "\ndone.\n");
+  std::cerr << "done.\n";
 
-  std::list<int> nl;
-  t2.to_list (nl);
-  
-  //dump (t2);
+  std::cerr << "iterate...";
 
-  //t2.dump();
+  // verify iterator works with stl...
+  std::list<int> l1 (t2.begin(), t2.end());
+  int vsum=0;
+  for (const int &i : t2) {
+    vsum += i;
+  }
+  std::cerr << "done. vsum= " << vsum << std::endl;
 
-  auto t3 = FAA<int> (nl.begin(), nl.end());
-  //dump (t3);
-  //t3.dump();
+  std::cerr << "accumulate= " << std::accumulate (t2.begin(), t2.end(), 0) << std::endl;
+
+  std::cerr << "empty faa...";
 
   bool found;
   int removed;
-  auto t4 = t2.remove (19, found, removed);
-  //t4.dump();
-  //dump (t4);
 
-  auto t5 = t4.remove (34, found, removed);
-  //t5.dump();
-  //dump (t5);
-
-  std::mt19937 g2 (3141);
-
-  for (int i=0; i < 10000; i++) {
-    int n = g2();
-    t5 = t5.remove (n, found, removed);
-    //dump (t5);
+  for (const int & n : l0) {
+    found = false;
+    t2 = t2.remove (n, found, removed);
+    assert (found);
+    assert (removed == n);
+    //t2.verify();
   }
+  
+  std::cerr << "done.\n";
+
+  // find
+
+  auto probe0 = t2.find (19);
+  std::cerr << "probe: " << *probe0 << std::endl;
+
+  auto probe1 = t2.find (3498234234);
+  assert (probe1 == t2.end());
+
+
+  auto t3 = t2.remove (19, found, removed);
+  auto t4 = t3.remove (34, found, removed);
+
+  t4.dump();
+  assert (t4.is_empty());
 
 }
