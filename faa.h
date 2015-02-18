@@ -343,9 +343,9 @@ public:
     if (level() > 0) {
       left().dump (d+1);
       for (int i=0; i < d; i++) {
-	fprintf (stderr, "  ");
+	std::cerr << "  ";
       }
-      fprintf (stderr, "%4d %d\n", level(), val());
+      std::cerr << (int)level() << ":" << val() << std::endl;
       right().dump (d+1);
     }
   }
