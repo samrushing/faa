@@ -12,12 +12,14 @@ private:
   struct Node;
   typedef std::shared_ptr<const Node> pNode;
   pNode _node;
+
+  typedef uint8_t level_t;
   
   struct Node {
-    Node (uint8_t level, pNode const & l, pNode const & r, T val) 
+    Node (level_t level, pNode const & l, pNode const & r, T val) 
       : _level(level), _l(l), _r(r), _val(val) {}
     Node () {}
-    uint8_t _level;
+    level_t _level;
     pNode _l;
     pNode _r;    
     T _val;
@@ -131,14 +133,15 @@ private:
 
   static
   pNode
-  make (uint8_t level, pNode const & l, pNode const & r, T val)
+  make (level_t level, pNode const & l, pNode const & r, T val)
   {
     return std::make_shared<const Node>(level, l, r, val);
   }
 
   explicit FAA (pNode const & node) : _node(node) {}
 
-  static pNode
+  static 
+  pNode
   skew (pNode const & n)
   {
     if (n->_level != 0) {
@@ -157,7 +160,8 @@ private:
     }
   }
 
-  static pNode
+  static
+  pNode
   split (pNode n)
   {
     if ((n->_level != 0) && (n->_r->_r->_level == n->_level)) {
@@ -200,19 +204,21 @@ private:
   // emulate mutability.
   // [xxx might it be possible to have non-const Node, then modify it, then wrap it in const later?
   //   might cut down on all the likely copies generated here...]
-  static pNode set_level (pNode n, uint8_t level) {return make (level, n->_l, n->_r, n->_val);}
+  static pNode set_level (pNode n, level_t level) {return make (level, n->_l, n->_r, n->_val);}
   static pNode set_l     (pNode n, pNode l)       {return make (n->_level, l, n->_r, n->_val);}
   static pNode set_r     (pNode n, pNode r)       {return make (n->_level, n->_l, r, n->_val);}
   static pNode set_val   (pNode n, T & val)       {return make (n->_level, n->_l, n->_r, val);}
 
   static
-  const pNode
+  pNode
   remove0 (Remover & r, pNode root, T & key)
   {
     pNode root0;
 
-    // --- descend ---
-    if (root->_level != 0) {
+    if (root->_level == 0) {
+      return root;
+    } else {
+      // --- descend ---
       r._heir = root;
       if (root->_val >= key) {
 	// this is set on each right turn
@@ -226,37 +232,36 @@ private:
       } else {
 	root0 = set_r (root, remove0 (r, root->_r, key));
       }
-    } else {
-      root0 = root;
-    }
-    // --- ascend ---
-    if (root == r._heir) {
-      // at the bottom, remove
-      if (r._item && r._item->_val == key) {
-	r._swap = root0->_val;
-	r._found = true;
-	// here we differ from AA's algorithm
-	if (root0->_r->_level == 0) {
-	  return root0->_l;
+      // --- ascend ---
+      if (root == r._heir) {
+	// at the bottom, remove
+	if (r._item && r._item->_val == key) {
+	  r._swap = root0->_val;
+	  r._found = true;
+	  // here we differ from AA's algorithm
+	  if (root0->_r->_level == 0) {
+	    return root0->_l;
+	  } else {
+	    return root0->_r;
+	  }
 	} else {
-	  return root0->_r;
+	  return root0;
 	}
       } else {
-	return root0;
-      }
-    } else {
-      // not at the bottom, check balance
-      if ((   root0->_l->_level < (root0->_level - 1))
-	  || (root0->_r->_level < (root0->_level - 1))) {
-	root0 = set_level (root0, root0->_level - 1);
-	if (root0->_r->_level > root0->_level) {
-	  // equivalent to root0.r.level = root0.level
-	  root0 = set_r (root0, set_level (root->_r, root0->_level));
+	// not at the bottom, check balance
+	if ((   root0->_l->_level < (root0->_level - 1))
+	    || (root0->_r->_level < (root0->_level - 1))) {
+	  //std::cerr << "B root0->_level == " << root0->_level << std::endl;
+	  root0 = set_level (root0, root0->_level - 1);
+	  //std::cerr << "A root0->_level == " << root0->_level << std::endl;
+	  if (root0->_r->_level > root0->_level) {
+	    // equivalent to root0.r.level = root0.level
+	    root0 = set_r (root0, set_level (root->_r, root0->_level));
+	  }
+	  return split (skew (root0));
+	} else {
+	  return root0;
 	}
-	root0 = split (skew (root0));
-	return root0;
-      } else {
-	return root0;
       }
     }
   }
@@ -284,7 +289,7 @@ public:
   FAA() : _node (_nil) 
   {}
 
-  FAA (uint8_t level, FAA const & l, FAA const & r, T val)
+  FAA (level_t level, FAA const & l, FAA const & r, T val)
     : _node (std::make_shared<const Node>(level, l._node, r._node, val))
   {}
 
@@ -307,7 +312,7 @@ public:
     return _node->_val;
   }
 
-  uint8_t level() const {return _node->_level;}
+  level_t level() const {return _node->_level;}
   FAA left() const {return FAA (_node->_l);}
   FAA right() const {return FAA (_node->_r);}
 
@@ -340,7 +345,7 @@ public:
   void
   dump (int d=1) 
   {
-    if (level() > 0) {
+    if (level() != 0) {
       left().dump (d+1);
       for (int i=0; i < d; i++) {
 	std::cerr << "  ";
