@@ -39,14 +39,19 @@ main (int argc, char * argv[])
   std::cerr << l0.size() << " entries...";
   std::cerr << "done.\n";
   std::cerr << "fill faa...";
+  using sysclock = std::chrono::system_clock;
+  std::chrono::time_point<sysclock> time0, time1;
+  time0 = sysclock::now();
 
   for (const int & n : l0) {
     t2 = t2.insert (n);
-    //fprintf (stderr, "\n--- %d\n", n);
-    //t2.dump();
-    //t2.verify();
   }
   
+  time1 = sysclock::now();
+
+  std::chrono::duration<double> elapsed_seconds = time1 - time0;
+  std::cerr << elapsed_seconds.count() << std::endl;
+
   t2.verify();
 
   std::cerr << "done.\n";
@@ -65,18 +70,28 @@ main (int argc, char * argv[])
 
   std::cerr << "empty faa...";
 
+  time0 = sysclock::now();
+
   bool found;
   int removed;
 
   for (const int & n : l0) {
     found = false;
+    //std::cerr << "--------------------" << std::endl;
+    //t2.dump();
+    //std::cerr << "remove (" << n << ")\n";
     t2 = t2.remove (n, found, removed);
     assert (found);
     assert (removed == n);
     //t2.verify();
+
   }
   
-  std::cerr << "done.\n";
+  time1 = sysclock::now();
+
+  elapsed_seconds = time1 - time0;
+
+  std::cerr << elapsed_seconds.count() << " done.\n";
 
   // find
 
