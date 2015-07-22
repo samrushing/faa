@@ -256,7 +256,7 @@ private:
 	  //std::cerr << "A root0->_level == " << root0->_level << std::endl;
 	  if (root0->_r->_level > root0->_level) {
 	    // equivalent to root0.r.level = root0.level
-	    root0 = set_r (root0, set_level (root->_r, root0->_level));
+	    root0 = set_r (root0, set_level (root0->_r, root0->_level));
 	  }
 	  return split (skew (root0));
 	} else {
