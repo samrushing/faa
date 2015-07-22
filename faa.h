@@ -14,14 +14,14 @@ private:
   pNode _node;
 
   typedef uint8_t level_t;
-  
+
   struct Node {
-    Node (level_t level, pNode const & l, pNode const & r, T val) 
+    Node (level_t level, pNode const & l, pNode const & r, T val)
       : _level(level), _l(l), _r(r), _val(val) {}
     Node () {}
     level_t _level;
     pNode _l;
-    pNode _r;    
+    pNode _r;
     T _val;
   };
 
@@ -129,7 +129,7 @@ private:
     nil->_l = std::shared_ptr<const Node>(nil);
     nil->_r = std::shared_ptr<const Node>(nil);
     return nil->_l;
-  } 
+  }
 
   static
   pNode
@@ -140,14 +140,14 @@ private:
 
   explicit FAA (pNode const & node) : _node(node) {}
 
-  static 
+  static
   pNode
   skew (pNode const & n)
   {
     if (n->_level != 0) {
       if (n->_l->_level == n->_level) {
 	return make (
-	  n->_level, 
+	  n->_level,
 	  n->_l->_l,
 	  skew (set_l (n, n->_l->_r)),
 	  n->_l->_val
@@ -176,8 +176,8 @@ private:
     }
   }
 
-  static 
-  pNode 
+  static
+  pNode
   insert0 (pNode n, T val0)
   {
     if (n->_level == 0) {
@@ -286,7 +286,7 @@ private:
 
 public:
 
-  FAA() : _node (_nil) 
+  FAA() : _node (_nil)
   {}
 
   FAA (level_t level, FAA const & l, FAA const & r, T val)
@@ -295,7 +295,7 @@ public:
 
   // populate an FAA from iterators.
   template<class I>
-  FAA (I b, I e) 
+  FAA (I b, I e)
   {
     FAA t;
     for_each(b, e, [&t](T const & v){
@@ -343,7 +343,7 @@ public:
   }
 
   void
-  dump (int d=1) 
+  dump (int d=1)
   {
     if (level() != 0) {
       left().dump (d+1);
@@ -386,4 +386,3 @@ public:
 
 template<typename T>
 typename FAA<T>::pNode FAA<T>::_nil = FAA<T>::make_nil();
-
